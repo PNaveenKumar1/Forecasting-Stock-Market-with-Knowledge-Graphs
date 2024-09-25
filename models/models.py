@@ -198,10 +198,12 @@ class Transformer_Ranking(nn.Module):
             x = y[-1, :, :].unsqueeze(dim=0)
 
         if self.use_graph and self.is_hyper_graph:
+            print("we are at 1")
             g_emb = self.graph_model(graph['x'], graph['hyperedge_index']).unsqueeze(dim=0)
             #g_emb = g_emb.repeat(1, self.time_steps, 1)
             x = torch.cat((x, g_emb), dim=2)
         elif self.use_graph == 'gcn' and not self.is_hyper_graph:
+            print("we are at 2")
             edge = torch.cat((tkg[0].unsqueeze(0), tkg[2].unsqueeze(0)), dim=0)
             batch = torch.ones(edge.shape[1]).long().to(tkg[0].device)
             g_emb = self.graph_model(self.ent_embeddings.weight, edge, batch)[tkg[4].long()]
@@ -212,12 +214,14 @@ class Transformer_Ranking(nn.Module):
 
         if self.use_relation_graph:
             if self.use_relation_graph == 'gcn':
+                print("we are at 3")
                 nodes = relation_graph[1].max() +1
                 node_list = torch.arange(nodes).to(relation_graph.device)
                 node_emb = self.rel_node_emb(node_list)
                 batch = torch.ones(relation_graph[1].shape).to(relation_graph.device)
                 rel_emb = self.rel_graph_model(node_emb, relation_graph, batch)[:x.shape[1]].unsqueeze(dim=0)
             elif self.use_relation_graph == 'hypergraph' or self.use_relation_graph == 'with_sector':
+                print("we are at 4")
                 nodes = relation_graph[0].max() +1
                 node_list = torch.arange(nodes).to(relation_graph.device)
                 node_emb = self.rel_node_emb(node_list)
@@ -226,6 +230,7 @@ class Transformer_Ranking(nn.Module):
 
 
         elif self.use_graph == 'rgat':
+            print("we are at 5")
             edge = torch.cat((tkg[0].unsqueeze(0), tkg[2].unsqueeze(0)), dim=0)
             batch = torch.ones(edge.shape[1]).long().to(tkg[0].device)
 
@@ -245,7 +250,9 @@ class Transformer_Ranking(nn.Module):
             self.tsne_emb_all = self.lin2(node_emb)   
             g_emb = g_emb.unsqueeze(dim=0)
             
-            #g_emb = self.graph_model(graph['x'], graph['edge_list'], graph['batch'])    
+            x.fill_(0)
+            #g_emb = self.graph_model(graph['x'], graph['edge_list'], graph['batch'])   
+            print(x)
             x = torch.cat((x, g_emb), dim=2)
 
             pos = torch.sum(self.lin2(node_emb[tkg[0].long()]) + edge_attr - self.lin2(node_emb[tkg[2].long()]), dim=1)
@@ -259,6 +266,7 @@ class Transformer_Ranking(nn.Module):
             self.minutes_embeddings.weight.data.renorm_(p=2, dim=1, maxnorm=1)
             self.sec_embeddings.weight.data.renorm_(p=2, dim=1, maxnorm=1)
         if self.use_graph == 'hgat':
+            print("we are at 6")
             edge = torch.cat((tkg[0].unsqueeze(0), tkg[2].unsqueeze(0)), dim=0) 
             batch = torch.ones(self.num_nodes).long().to(tkg[0].device)
             node_type = self.node_type.to(tkg[0].device)
@@ -303,7 +311,7 @@ class Transformer_Ranking(nn.Module):
             #kg_emb, rel_emb = self.relation_kge.get_embeddings()
             #kg_emb = kg_emb[tkg[4].long()]
             #self.relation_kge.normalize_parameters()
-
+            print("we are at 7")
             kg_loss = self.kge(tkg[0], tkg[2], tkg[1], tkg[3])
             kg_emb = self.kge.ent_embeddings.weight[tkg[4].long()]
             self.kge.regularize_embeddings()

@@ -34,3 +34,4 @@ kg/profile_and_relationship/wikidata/nse/apicache-py3/2884926ad6288510715da43367
 kg/profile_and_relationship/wikidata/nse/apicache-py3/f592906a22a061b80a4fc9e557de4f99ee8ddfc15afa847a88d8e574c1de5508
 models/__pycache__/models.cpython-39.pyc
 kg/tkg_create/temporal_kg.pkl
+*.pyc

@@ -48,7 +48,7 @@ def window_scale_divison(df, W, T, company_to_id, ticker):
 # ------- H2: Create Data -------------
 def create_batch_dataset(INDEX, W, T=20, problem='value', fast = False):
 
-    directory = "data/" + INDEX + "/"
+    directory = "data/" + "nasdaq_2" + "/"
 
     company_to_id = {}
     company_id    = 0
@@ -64,7 +64,8 @@ def create_batch_dataset(INDEX, W, T=20, problem='value', fast = False):
             ticker, name = filename.split("-")
             df = pd.read_csv(f)
 
-            df = df.dropna()
+            # df = df.dropna()
+            df = df.fillna(method='ffill')
 
             if df.shape[0] <= 2800:    # 13 years
                 print("Skipping file: Less Training-Testing samples [{0} samples]".format(df.shape[0]))

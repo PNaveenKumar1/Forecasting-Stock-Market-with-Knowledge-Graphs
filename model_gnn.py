@@ -34,13 +34,13 @@ from torch_geometric.nn import global_mean_pool
 
 #import tensorflow_ranking as tfr
 
-from pytorchltr.loss import LambdaNDCGLoss1, LambdaNDCGLoss2
+# from pytorchltr.loss import LambdaNDCGLoss1, LambdaNDCGLoss2
 from torchmetrics.functional import retrieval_normalized_dcg
 
 from random import randint
 import wandb
 
-GPU = 2
+GPU = 3
 LR = 0.0006
 BS = 128
 W = 20
@@ -52,9 +52,9 @@ DROPOUT = 0.1
 D_FF    = 1024
 ENC_LAYERS = 1
 DEC_LAYERS = 1
-MAX_EPOCH = 15
+MAX_EPOCH = 10
 USE_POS_ENCODING = False
-USE_GRAPH = [True, False, 'hgat', 'rgat', 'gcn'][3]
+USE_GRAPH = [True, False, 'hgat', 'rgat', 'gcn'][2]
 HYPER_GRAPH = [True, False][1]
 USE_RELATION_GRAPH = ['gcn', 'hypergraph', 'with_sector', False][3]
 USE_KG = [True, False][1]
@@ -124,16 +124,16 @@ if LOG:
 
     wandb.init(project="KG-Stock-Graph"+str(T), config=wandb_config)
 
-INDEX = ["nasdaq100", "sp500", "nifty500"][2]
+INDEX = ["nasdaq100", "sp500", "nifty500"][0]
 print("Experiment {0} With Entire KG P24 W=20 Run 1 RGAT - No rank loss - Adam W - LR 3e-4".format(INDEX))
 
 save_path = "data/pickle/"+INDEX+"/full_graph_data_correct-P25-W"+str(W)+"-T"+str(T)+"_"+str(PREDICTION_PROBLEM)+".pkl"
 
-#dataset, company_to_id, graph, hyper_data = load_or_create_dataset_graph(INDEX=INDEX, W=W, T=T, save_path=save_path, problem=PREDICTION_PROBLEM, fast=FAST)
+dataset, company_to_id, graph, hyper_data = load_or_create_dataset_graph(INDEX=INDEX, W=W, T=T, save_path=save_path, problem=PREDICTION_PROBLEM, fast=FAST)
 
-with open("pickle/"+INDEX+"_meta.pkl", "rb") as f:
+#with open("pickle/"+INDEX+"_meta.pkl", "rb") as f:
     #pickle.dump([company_to_id, graph, hyper_data], f)
-    company_to_id, graph, hyper_data = pickle.load(f)
+    #company_to_id, graph, hyper_data = pickle.load(f)
 
 num_nodes = len(company_to_id.keys())
 inverse_company_to_id = {v: k for k, v in company_to_id.items()}
@@ -506,14 +506,14 @@ for tau in tau_choices:
     def collate_fn(instn):
         tkg = instn[0][1]
         instn = instn[0][0]
-        
+
         # df: shape: Companies x W+1 x 5 (5 is the number of features)
         df = torch.Tensor(np.array([x[0] for x in instn])).unsqueeze(dim=2)
         #df = torch.Tensor(np.array([x[1] for x in instn])).unsqueeze(dim=2) - torch.Tensor(np.array([x[2] for x in instn])).unsqueeze(dim=2)
         for i in range(1, 5):
             df1 = torch.Tensor(np.array([x[i] for x in instn])).unsqueeze(dim=2)
             df = torch.cat((df, df1), dim=2)
-        
+
         # Shape: Companies x 1
         target = torch.Tensor(np.array([x[7][tau_pos] for x in instn]))
 
@@ -532,23 +532,21 @@ for tau in tau_choices:
     test_mean_ndcg, test_mean_acc = [[], [], [], []], [[], [], []]
     test_mean_brr, test_mean_wrr, test_mean_sharpe = torch.zeros(4).to(device), torch.zeros(4).to(device), [[], [], []]
 
-    for phase in range(1, 25):
+    for phase in range(1, 7):
         print("Phase: ", phase)
 
-        with open("pickle/"+INDEX+"_"+str(phase)+"_25phase.pkl", "rb") as f:
+        #with open("pickle/"+INDEX+"_"+str(phase)+"_25phase.pkl", "rb") as f:
             #pickle.dump(dataset[train_begin:start_time+400], f)
-            dataset = pickle.load(f)
-            print(len(dataset))
+        #    dataset = pickle.load(f)
+        #    print(len(dataset))
 
-        train_loader    = DataLoader(dataset[:-150], 1, shuffle=True, collate_fn=collate_fn, num_workers=1)
-        val_loader      = DataLoader(dataset[-150:-100], 1, shuffle=False, collate_fn=collate_fn)
-        test_loader     = DataLoader(dataset[-100:], 1, shuffle=False, collate_fn=collate_fn)   
-
-        start_time += 100
+        train_loader    = DataLoader(dataset[start_time:start_time+1000], 1, shuffle=True, collate_fn=collate_fn, num_workers=1)
+        val_loader      = DataLoader(dataset[start_time+1000:start_time+1100], 1, shuffle=False, collate_fn=collate_fn)
+        test_loader     = DataLoader(dataset[start_time+1100:start_time+1400], 1, shuffle=False, collate_fn=collate_fn)   
+        #print(len(dataset), len(dataset[start_time:start_time+1000]), len(dataset[start_time+1000:start_time+1100]), len(dataset[start_time+1100:start_time+1400]))
+        start_time += 300
         if start_time >= 300:
-            train_begin += 100   
-
-    
+            train_begin += 100      
 
         node_type = torch.load('./kg/tkg_create/node_tensor_usa.pt')
         config = {
@@ -644,7 +642,7 @@ for tau in tau_choices:
         if LOG:
             wandb.save('model.py')
 
-    phase = 24
+    phase = 14
     print("Tau: ", tau)
     for index, k in enumerate(top_k_choice):
         print("[Result Copy] Top {1} {2} {3} {4}".format("TESTING", k, sum(test_mean_ndcg[index])/phase, sum(test_mean_acc[index])/phase, sum(test_mean_rr[index])/phase))
