@@ -41,4 +41,5 @@ The model utilizes:
 - A final fully connected layer to compute stock ranking scores.
 
 ![Model Architecture](Model Architecture.png)
+![Model Architecture](https://github.com/user-attachments/assets/dd15ff52-b65f-4c8c-ac73-66785c85c596)
 
